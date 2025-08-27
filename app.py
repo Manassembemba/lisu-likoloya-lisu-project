@@ -224,27 +224,30 @@ def render_case_management(selected_model_name):
             if user_msg.strip():
                 transaction_data = selected_transaction.iloc[0].to_dict()
                 payload = {
-                    "question": str(user_msg),
-                    "model": str(selected_model_name),
-                    "Id_client": int(transaction_data.get("id_client", 0)),
-                    "date & time": str(transaction_data.get("trans_date_trans_time")),
-                    "card number": int(transaction_data.get("cc_num", 0)),
-                    "marchant": str(transaction_data.get("merchant", "")),
-                    "category": str(transaction_data.get("category", "")),
-                    "montant": float(transaction_data.get("amt", 0.0)),
-                    "genre": str(transaction_data.get("gender", "")),
-                    "city": str(transaction_data.get("city", "")),
-                    "state": str(transaction_data.get("state", "")),
-                    "zip": str(transaction_data.get("zip", "")),
-                    "city_pop": str(transaction_data.get("city_pop", "")),
-                    "job": str(transaction_data.get("job", "")),
-                    "date of beard": str(transaction_data.get("dob")),
-                    "march_lat": float(transaction_data.get("merch_lat", 0.0)),
-                    "march_long": float(transaction_data.get("merch_long", 0.0)),
-                    "hour": int(transaction_data.get("hour", 0)),
-                    "day_of_week": int(transaction_data.get("day_of_week", 0)),
-                    "is_fraud_predicted": bool(transaction_data.get("is_fraud", False)),
-                    "probability_fraud": float(transaction_data.get("score", 0.0))
+                    "src": {
+                        "question": str(user_msg).strip(),
+                        "model": str(selected_model_name),
+                        "id_trans": int(transaction_data.get("id_trans", 0)),
+                        "id_client": int(transaction_data.get("id_client", 0)),
+                        "trans_datetime": str(transaction_data.get("trans_date_trans_time")),
+                        "card_number": int(transaction_data.get("cc_num", 0)),
+                        "merchant": str(transaction_data.get("merchant", "")),
+                        "category": str(transaction_data.get("category", "")),
+                        "amount": float(transaction_data.get("amt", 0.0)),
+                        "gender": str(transaction_data.get("gender", "")),
+                        "city": str(transaction_data.get("city", "")),
+                        "state": str(transaction_data.get("state", "")),
+                        "zip": str(transaction_data.get("zip", "")),
+                        "city_population": str(transaction_data.get("city_pop", "")),
+                        "job": str(transaction_data.get("job", "")),
+                        "dob": str(transaction_data.get("dob", "")),
+                        "merchant_lat": float(transaction_data.get("merch_lat", 0.0)),
+                        "merchant_long": float(transaction_data.get("merch_long", 0.0)),
+                        "hour": int(transaction_data.get("hour", 0)),
+                        "day_of_week": int(transaction_data.get("day_of_week", 0)),
+                        "is_fraud_predicted": bool(transaction_data.get("is_fraud", False)),
+                        "probability_fraud": float(transaction_data.get("score", 0.0))
+                    }
                 }
                 n8n_url = "https://n8n-dw1u.onrender.com/webhook/fraudeExplain"
                 try:
@@ -269,14 +272,22 @@ def render_case_management(selected_model_name):
             else:
                 st.warning("Veuillez saisir une question.")
 
-        if 'n8n_response' in st.session_state:
-            st.markdown("**Réponse de Mr.LISU :**")
-            response_data = st.session_state.n8n_response
-            if isinstance(response_data, dict) and 'output' in response_data:
-                cleaned_text = clean_response_text(response_data['output'])
-                st.markdown(cleaned_text, unsafe_allow_html=True)
+       # 🔗 Vérifie que la réponse correspond bien à la transaction actuelle
+        if 'n8n_response' in st.session_state and 'n8n_trans_id' in st.session_state:
+            if st.session_state.n8n_trans_id == selected_transaction.iloc[0]['id_trans']:
+                st.markdown("**Réponse de Mr.LISU :**")
+                response_data = st.session_state.n8n_response
+                if isinstance(response_data, dict) and 'output' in response_data:
+                    cleaned_text = clean_response_text(response_data['output'])
+                    st.markdown(cleaned_text, unsafe_allow_html=True)
+                else:
+                    st.warning("Réponse du système (possible erreur) :")
+                    st.json(response_data)
             else:
-                st.json(response_data)
+                # ❌ La réponse ne correspond pas à cette transaction
+                del st.session_state.n8n_response
+                del st.session_state.n8n_trans_id
+                st.rerun()
             if st.button("💾 Sauvegarder cette explication", key="n8n_save"):
                 explanation_str = json.dumps(st.session_state.n8n_response, indent=2, ensure_ascii=False)
                 auth.update_fraud_justification(st.session_state.n8n_trans_id, explanation_str)

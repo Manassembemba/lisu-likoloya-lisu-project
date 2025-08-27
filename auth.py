@@ -5,8 +5,14 @@ import pandas as pd
 # --- Initialisation de la connexion à Supabase ---
 @st.cache_resource
 def init_connection():
+    # Vérifier si les secrets sont bien présents
+    if "supabase_url" not in st.secrets or "supabase_key" not in st.secrets:
+        st.error("Erreur: Les secrets Supabase (URL et Clé) ne sont pas configurés. Veuillez les ajouter à votre fichier .streamlit/secrets.toml.")
+        return None
+
     url = st.secrets["supabase_url"]
     key = st.secrets["supabase_key"]
+    
     try:
         client = create_client(url, key)
         return client

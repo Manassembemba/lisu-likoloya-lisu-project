@@ -19,7 +19,7 @@ plt.switch_backend('Agg')
 # ===============================
 st.set_page_config(
     page_title="Lisu Likolo ya Lisu - Détection de Fraude Bancaire",
-    page_icon="🛡️",
+    page_icon="LOGO.jpg",
     layout="wide"
 )
 
